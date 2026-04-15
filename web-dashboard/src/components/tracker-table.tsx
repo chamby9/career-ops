@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Application } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RowActions, type CanonicalStatus } from "@/components/row-actions";
 
 const statusVariants: Record<string, string> = {
   Evaluated: "bg-blue-500/15 text-blue-300 border-blue-500/30",
@@ -71,21 +72,51 @@ export function TrackerTable({ applications }: { applications: Application[] }) 
   const minScore = params.get("min") ? parseFloat(params.get("min")!) : null;
   const query = params.get("q")?.toLowerCase() ?? "";
 
+  const [statusOverrides, setStatusOverrides] = useState<Record<number, string>>({});
+
+  const effective = useMemo(
+    () =>
+      applications.map((a) =>
+        statusOverrides[a.num] ? { ...a, status: statusOverrides[a.num] } : a,
+      ),
+    [applications, statusOverrides],
+  );
+
   const allStatuses = useMemo(() => {
     const set = new Set<string>();
-    applications.forEach((a) => set.add(a.status));
+    effective.forEach((a) => set.add(a.status));
     return Array.from(set).sort();
-  }, [applications]);
+  }, [effective]);
+
+  async function changeStatus(num: number, status: CanonicalStatus, previous: string) {
+    setStatusOverrides((prev) => ({ ...prev, [num]: status }));
+    try {
+      const res = await fetch(`/api/tracker/${num}/status`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(error || "request failed");
+      }
+      router.refresh();
+    } catch (err) {
+      setStatusOverrides((prev) => ({ ...prev, [num]: previous }));
+      const msg = err instanceof Error ? err.message : "Failed to update status";
+      if (typeof window !== "undefined") window.alert(`Status change failed: ${msg}`);
+    }
+  }
 
   const filtered = useMemo(() => {
-    const list = applications.filter((a) => {
+    const list = effective.filter((a) => {
       if (statusFilters.length > 0 && !statusFilters.includes(a.status)) return false;
       if (minScore !== null && (a.scoreValue === null || a.scoreValue < minScore)) return false;
       if (query && !`${a.company} ${a.role} ${a.notes}`.toLowerCase().includes(query)) return false;
       return true;
     });
     return list.sort((a, b) => compare(a, b, sortKey, sortDir));
-  }, [applications, statusFilters, minScore, query, sortKey, sortDir]);
+  }, [effective, statusFilters, minScore, query, sortKey, sortDir]);
 
   function updateParams(mutate: (p: URLSearchParams) => void) {
     const next = new URLSearchParams(params.toString());
@@ -212,8 +243,8 @@ export function TrackerTable({ applications }: { applications: Application[] }) 
           {filtered.map((a) => {
             const statusClass =
               statusVariants[a.status] ?? "bg-muted text-muted-foreground border-border";
-            const row = (
-              <div className="flex items-start gap-3 p-3">
+            const content = (
+              <div className="flex-1 min-w-0 flex items-start gap-3">
                 <div className="flex-none w-8 text-xs text-muted-foreground tabular-nums pt-0.5">
                   #{a.num}
                 </div>
@@ -242,16 +273,31 @@ export function TrackerTable({ applications }: { applications: Application[] }) 
               </div>
             );
 
-            return a.reportSlug ? (
-              <Link
+            return (
+              <div
                 key={a.num}
-                href={`/reports/${encodeURIComponent(a.reportSlug)}`}
-                className="block hover:bg-accent/40 transition-colors"
+                className="flex items-start gap-2 p-3 hover:bg-accent/40 transition-colors"
               >
-                {row}
-              </Link>
-            ) : (
-              <div key={a.num}>{row}</div>
+                {a.reportSlug ? (
+                  <Link
+                    href={`/reports/${encodeURIComponent(a.reportSlug)}`}
+                    className="flex-1 min-w-0 flex"
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  content
+                )}
+                <div className="flex-none pt-0.5">
+                  <RowActions
+                    num={a.num}
+                    currentStatus={a.status}
+                    reportSlug={a.reportSlug}
+                    jdUrl={null}
+                    onStatusChange={(s) => changeStatus(a.num, s, a.status)}
+                  />
+                </div>
+              </div>
             );
           })}
         </div>
