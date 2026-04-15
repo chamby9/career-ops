@@ -149,13 +149,17 @@ scan.mjs, generate-pdf.mjs, analyze-patterns.mjs, followup-cadence.mjs, check-li
 - [x] `POST /api/pipeline/discard` for single/bulk URL removal (preserves file formatting)
 - [x] `POST /api/pipeline/liveness` wrapping check-liveness.mjs (max 10 URLs; exit-1 surfaced as ok:true)
 
-### v2.4 — Reports facets
+### v2.4 — Reports facets [shipped, 3 defers]
 
-- [ ] Extract archetype, location, seniority from report headers into a derived index cache
-- [ ] Facet sidebar: archetype, legitimacy, score range, location, date range
-- [ ] Inline A-G block previews (collapsible)
-- [ ] Multi-select → "Compare selected" → queues `ofertas`
-- [ ] Full-text search across report bodies
+- [x] Parser fix: accept `Date:|Fecha:|Date evaluated:` and `Archetype:|Arquetipo:` (date regex was broken — everything was null). Slug-derived date fallback.
+- [x] Derived fields: `archetypeKey` (6 canonical tokens, longest-match-first), `legitimacyTier` (high/caution/other)
+- [x] Facet sidebar: archetype multi-select, legitimacy multi-select, min score, text search across title+archetype+legitimacy
+- [x] URL-state via `useSearchParams` (`?archetype=&legit=&min=&q=&sort=&dir=`) — mirrors tracker pattern
+- [x] Multi-select checkboxes + "Compare" button → queues `ofertas` (min 2 reports)
+- [~] **Deferred:** location & seniority facets — both live in section A markdown tables, not header. Low payoff given 1 outlier for Location and heterogeneous seniority phrasing.
+- [~] **Deferred:** derived-index cache — 41 reports × 17K reads in <100ms, no bottleneck yet. Revisit at 200+ reports.
+- [~] **Deferred:** Inline A-G collapsibles on detail page — current full-markdown render is already readable; could add if navigation within long reports becomes painful.
+- [~] **Deferred:** full-text search across bodies — current search hits title+archetype+legitimacy only. A bodies index needs the cache step first.
 
 ### v2.5 — Interview Prep hub
 

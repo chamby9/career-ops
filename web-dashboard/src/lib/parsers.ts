@@ -9,6 +9,7 @@ import type {
   Stats,
   ScanRun,
   ScanHistory,
+  LegitimacyTier,
 } from "./types";
 
 async function readIfExists(file: string): Promise<string | null> {
@@ -85,26 +86,66 @@ export async function loadApplications(): Promise<Application[]> {
   return rows.sort((a, b) => b.num - a.num);
 }
 
+// Primary archetype tokens (longest-match-first). Reports often list a hybrid
+// like "AI Forward Deployed Engineer (hybrid: AI Solutions Architect)" — we
+// normalize to the first/primary token for faceting.
+const ARCHETYPE_KEYS: Array<[string, RegExp]> = [
+  ["AI Platform / LLMOps Engineer", /AI Platform\s*\/\s*LLMOps Engineer/i],
+  ["AI Forward Deployed Engineer", /AI Forward Deployed Engineer|Forward Deployed Engineer/i],
+  ["AI Solutions Architect", /AI Solutions Architect|Solutions Architect/i],
+  ["AI Transformation Lead", /AI Transformation Lead/i],
+  ["Technical AI Product Manager", /Technical AI Product Manager|AI Product Manager/i],
+  ["Agentic Workflows / Automation", /Agentic Workflows\s*\/\s*Automation/i],
+];
+
+function normalizeArchetype(raw: string | null): string | null {
+  if (!raw) return null;
+  for (const [key, rx] of ARCHETYPE_KEYS) {
+    if (rx.test(raw)) return key;
+  }
+  // Edge cases like "N/A — Research Fellowship"
+  return "Other";
+}
+
+function normalizeLegitimacy(raw: string | null): LegitimacyTier | null {
+  if (!raw) return null;
+  const s = raw.toLowerCase();
+  if (/high\s*confidence|tier\s*1|verified/i.test(s)) return "high";
+  if (/caution|tier\s*2|proceed/i.test(s)) return "caution";
+  return "other";
+}
+
 function parseReportMeta(slug: string, content: string): ReportMeta {
   const titleMatch = content.match(/^#\s+(.+)$/m);
   const scoreMatch = content.match(/\*\*Score:\*\*\s*([\d.]+)/);
   const urlMatch = content.match(/\*\*URL:\*\*\s*(\S+)/);
   const legitMatch = content.match(/\*\*Legitimacy:\*\*\s*([^\n]+)/);
   const verifMatch = content.match(/\*\*Verification:\*\*\s*([^\n]+)/);
-  const locMatch = content.match(/\*\*Location:\*\*\s*([^\n]+)/);
-  const dateMatch = content.match(/\*\*Date evaluated:\*\*\s*(\d{4}-\d{2}-\d{2})/);
+  const locMatch = content.match(/\*\*(?:Location|Ubicación):\*\*\s*([^\n]+)/);
+  // Report headers use Date|Fecha|Date evaluated — accept any.
+  const dateMatch = content.match(/\*\*(?:Date(?:\s+evaluated)?|Fecha):\*\*\s*(\d{4}-\d{2}-\d{2})/);
   const pdfMatch = content.match(/\*\*PDF:\*\*\s*(✅|❌)/);
+  const archMatch = content.match(/\*\*(?:Archetype|Arquetipo):\*\*\s*([^\n]+)/);
+
+  // Fallback: derive date from slug (format: NNN-slug-YYYY-MM-DD)
+  const slugDate = slug.match(/(\d{4}-\d{2}-\d{2})$/);
+
+  const legitimacy = legitMatch ? legitMatch[1].trim() : null;
+  const archetype = archMatch ? archMatch[1].trim() : null;
 
   return {
     slug,
     title: titleMatch ? titleMatch[1].trim() : slug,
     score: scoreMatch ? parseFloat(scoreMatch[1]) : null,
     url: urlMatch ? urlMatch[1] : null,
-    legitimacy: legitMatch ? legitMatch[1].trim() : null,
+    legitimacy,
+    legitimacyTier: normalizeLegitimacy(legitimacy),
     verification: verifMatch ? verifMatch[1].trim() : null,
     location: locMatch ? locMatch[1].trim() : null,
-    date: dateMatch ? dateMatch[1] : null,
+    date: dateMatch ? dateMatch[1] : slugDate ? slugDate[1] : null,
     pdfGenerated: pdfMatch ? pdfMatch[1] === "✅" : false,
+    archetype,
+    archetypeKey: normalizeArchetype(archetype),
   };
 }
 

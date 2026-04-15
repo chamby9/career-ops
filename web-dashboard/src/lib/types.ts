@@ -12,16 +12,21 @@ export type Application = {
   notes: string;
 };
 
+export type LegitimacyTier = "high" | "caution" | "other";
+
 export type ReportMeta = {
   slug: string;
   title: string;
   score: number | null;
   url: string | null;
   legitimacy: string | null;
+  legitimacyTier: LegitimacyTier | null;
   verification: string | null;
   location: string | null;
   date: string | null;
   pdfGenerated: boolean;
+  archetype: string | null;
+  archetypeKey: string | null;
 };
 
 export type Report = ReportMeta & {
