@@ -127,16 +127,16 @@ scan.mjs, generate-pdf.mjs, analyze-patterns.mjs, followup-cadence.mjs, check-li
 - [x] Worker: extend action whitelist to `contacto`, `deep`, `interview-prep`, `apply`, `training`, `project`, `ofertas`, `batch`
 - [x] Optimistic UI for status changes; alert() on failure (toast component deferred to v3 polish)
 
-### v2.2 — Mechanical script endpoints (no Claude, no worker)
+### v2.2 — Mechanical script endpoints (no Claude, no worker) [shipped, 1 defer]
 
-- [ ] `POST /api/scripts/patterns` → spawn analyze-patterns.mjs, return JSON
-- [ ] `POST /api/scripts/followup` → spawn followup-cadence.mjs, return JSON
-- [ ] `POST /api/scripts/liveness` → spawn check-liveness.mjs, return JSON
-- [ ] `POST /api/scripts/scan` → spawn scan.mjs (moves off worker; no Claude needed)
-- [ ] `POST /api/scripts/pdf` → spawn generate-pdf.mjs for pre-rendered HTML
-- [ ] `POST /api/scripts/verify`, `dedup`, `normalize`, `merge`, `doctor`
-- [ ] Shared helper `runScript(name, args)` with timeout + stderr capture
-- [ ] Gated by a `x-local` header or Tailscale IP allowlist (defense in depth)
+- [x] `POST /api/scripts/patterns` → spawn analyze-patterns.mjs, return parsed JSON
+- [x] `POST /api/scripts/followup` → spawn followup-cadence.mjs, return parsed JSON
+- [x] `POST /api/scripts/liveness` → spawn check-liveness.mjs (max 10 URLs, 15s each); exit-1 ("any expired") surfaced as ok:true with note
+- [x] `POST /api/scripts/scan` → spawn scan.mjs (120s timeout; moves off worker)
+- [~] `POST /api/scripts/pdf` → **deferred.** generate-pdf.mjs needs a pre-rendered HTML path, which no flow currently produces — Claude's `pdf` mode writes the HTML to /tmp then calls it. Revisit if a non-Claude PDF path emerges.
+- [x] `POST /api/scripts/verify`, `dedup`, `normalize`, `merge`, `doctor` — plain-text stdout returned as `{ok, exitCode, stdout, stderr, durationMs}`; exit-1 "reported issues" (verify/doctor) surfaced as ok:true with note
+- [x] Shared helper `runScript(name, args, {timeoutMs})` in `src/lib/run-script.ts` with stream-limited stdout/stderr capture, SIGTERM→SIGKILL on timeout
+- [x] Gated by `x-local` header (token via `DASHBOARD_LOCAL_TOKEN` env, dev default `dashboard-local`). Tailscale is still the real auth boundary; this is defense-in-depth.
 
 ### v2.3 — Pipeline enhancements
 
