@@ -10,4 +10,5 @@ export const paths = {
   profile: path.join(PROJECT_ROOT, "config", "profile.yml"),
   queue: path.join(PROJECT_ROOT, "data", "dashboard-queue.jsonl"),
   queueStatus: path.join(PROJECT_ROOT, "data", "dashboard-queue-status.jsonl"),
+  outputDir: path.join(PROJECT_ROOT, "output"),
 };
