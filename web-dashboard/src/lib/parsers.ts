@@ -1,7 +1,15 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { paths } from "./paths";
-import type { Application, Report, ReportMeta, PipelineItem, Stats } from "./types";
+import type {
+  Application,
+  Report,
+  ReportMeta,
+  PipelineItem,
+  Stats,
+  ScanRun,
+  ScanHistory,
+} from "./types";
 
 async function readIfExists(file: string): Promise<string | null> {
   try {
@@ -140,19 +148,69 @@ export async function loadPipeline(): Promise<PipelineItem[]> {
     const line = rawLine.trim();
     if (!line || line.startsWith("#")) continue;
 
-    const bulletMatch = line.match(/^[-*]\s+(.+)$/);
-    const urlSource = bulletMatch ? bulletMatch[1] : line;
+    const bulletMatch = line.match(/^[-*]\s+(?:\[[ xX]\]\s+)?(.+)$/);
+    const body = bulletMatch ? bulletMatch[1] : line;
 
-    const mdLinkMatch = urlSource.match(/\[([^\]]+)\]\((https?:\/\/\S+)\)/);
+    const mdLinkMatch = body.match(/\[([^\]]+)\]\((https?:\/\/\S+)\)/);
     if (mdLinkMatch) {
       items.push({ url: mdLinkMatch[2], label: mdLinkMatch[1] });
       continue;
     }
 
-    const urlMatch = urlSource.match(/(https?:\/\/\S+)/);
-    if (urlMatch) items.push({ url: urlMatch[1] });
+    const urlMatch = body.match(/(https?:\/\/\S+)/);
+    if (!urlMatch) continue;
+    const url = urlMatch[1];
+
+    // `URL | Company | Role` convention used by scan.mjs output
+    const rest = body.slice(urlMatch.index! + url.length).trim();
+    if (rest.startsWith("|")) {
+      const parts = rest
+        .slice(1)
+        .split("|")
+        .map((p) => p.trim())
+        .filter(Boolean);
+      const [company, role] = parts;
+      items.push({ url, company, role });
+      continue;
+    }
+
+    items.push({ url });
   }
   return items;
+}
+
+export async function loadScanHistory(limit = 30): Promise<ScanHistory> {
+  const file = path.join(paths.dataDir, "scan-history.tsv");
+  const content = await readIfExists(file);
+  if (!content) return { runs: [], lastRun: null };
+
+  const lines = content.split("\n");
+  const runsByDate = new Map<string, ScanRun>();
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+    if (i === 0 && line.startsWith("url\t")) continue;
+
+    const cells = line.split("\t");
+    if (cells.length < 3) continue;
+    const [, firstSeen, portal] = cells;
+    if (!firstSeen || !portal) continue;
+
+    let run = runsByDate.get(firstSeen);
+    if (!run) {
+      run = { date: firstSeen, total: 0, byPortal: {} };
+      runsByDate.set(firstSeen, run);
+    }
+    run.total += 1;
+    run.byPortal[portal] = (run.byPortal[portal] ?? 0) + 1;
+  }
+
+  const runs = Array.from(runsByDate.values())
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, limit);
+
+  return { runs, lastRun: runs[0] ?? null };
 }
 
 export async function loadStats(): Promise<Stats> {

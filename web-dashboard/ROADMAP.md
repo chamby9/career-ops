@@ -138,13 +138,16 @@ scan.mjs, generate-pdf.mjs, analyze-patterns.mjs, followup-cadence.mjs, check-li
 - [x] Shared helper `runScript(name, args, {timeoutMs})` in `src/lib/run-script.ts` with stream-limited stdout/stderr capture, SIGTERM→SIGKILL on timeout
 - [x] Gated by `x-local` header (token via `DASHBOARD_LOCAL_TOKEN` env, dev default `dashboard-local`). Tailscale is still the real auth boundary; this is defense-in-depth.
 
-### v2.3 — Pipeline enhancements
+### v2.3 — Pipeline enhancements [shipped]
 
-- [ ] Bulk select URLs → "Evaluate all" queues a `batch` job
-- [ ] Per-URL: Evaluate, Discard, Liveness-check, Open
-- [ ] Scan history view (timeline from data/scan-history.tsv)
-- [ ] "Scan now" button → calls /api/scripts/scan
-- [ ] Show which portals produced new URLs last run
+- [x] Bulk select URLs → "Queue batch" (runs `/career-ops batch` on full pipeline.md) or "Evaluate each" (one `evaluate` job per URL)
+- [x] Per-URL kebab: Evaluate, Discard, Liveness-check, Open
+- [x] Scan history view: last-run portal breakdown + recent runs timeline from `data/scan-history.tsv`
+- [x] "Scan now" button → `POST /api/pipeline/scan` (internal wrapper around scan.mjs, 120s timeout)
+- [x] Show which portals produced new URLs last run (badge breakdown)
+- [x] Parser now extracts `URL | Company | Role` metadata; titles rendered as "Company — Role" when present
+- [x] `POST /api/pipeline/discard` for single/bulk URL removal (preserves file formatting)
+- [x] `POST /api/pipeline/liveness` wrapping check-liveness.mjs (max 10 URLs; exit-1 surfaced as ok:true)
 
 ### v2.4 — Reports facets
 

@@ -31,6 +31,19 @@ export type Report = ReportMeta & {
 export type PipelineItem = {
   url: string;
   label?: string;
+  company?: string;
+  role?: string;
+};
+
+export type ScanRun = {
+  date: string;
+  total: number;
+  byPortal: Record<string, number>;
+};
+
+export type ScanHistory = {
+  runs: ScanRun[];
+  lastRun: ScanRun | null;
 };
 
 export type Stats = {
