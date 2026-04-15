@@ -108,6 +108,38 @@ export function TrackerTable({ applications }: { applications: Application[] }) 
     }
   }
 
+  async function scheduleFollowup(num: number, company: string) {
+    if (typeof window === "undefined") return;
+    const today = new Date();
+    today.setDate(today.getDate() + 7);
+    const defaultDate = today.toISOString().slice(0, 10);
+    const dueDate = window.prompt(
+      `Schedule follow-up for ${company} (#${num})\nDate (YYYY-MM-DD):`,
+      defaultDate,
+    );
+    if (!dueDate) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate.trim())) {
+      window.alert("Date must be YYYY-MM-DD");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/tracker/${num}/followup`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ dueDate: dueDate.trim() }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(error || "request failed");
+      }
+      window.alert(`Follow-up scheduled for ${dueDate.trim()}`);
+      router.refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Schedule failed";
+      window.alert(`Follow-up failed: ${msg}`);
+    }
+  }
+
   async function queueJob(action: string, args: Record<string, unknown>, label: string) {
     try {
       const res = await fetch(`/api/jobs`, {
@@ -318,6 +350,7 @@ export function TrackerTable({ applications }: { applications: Application[] }) 
                     jdUrl={a.jdUrl}
                     onStatusChange={(s) => changeStatus(a.num, s, a.status)}
                     onQueueJob={queueJob}
+                    onScheduleFollowup={() => scheduleFollowup(a.num, a.company)}
                   />
                 </div>
               </div>
