@@ -208,6 +208,23 @@ scan.mjs, generate-pdf.mjs, analyze-patterns.mjs, followup-cadence.mjs, check-li
 
 ---
 
+## Project hygiene (non-dashboard)
+
+### Normalize modes to English
+
+The default `modes/*.md` are Spanish-flavored (author's native language),
+causing reports to randomly mix `Fecha:`/`Date:`, `Arquetipo:`/`Archetype:`,
+`## A) Resumen del Rol`/`## A) Role Summary`. The dashboard parser now
+accepts both, but the root cause is prompt drift.
+
+- [ ] Translate `modes/*.md` (default set) to English end-to-end
+- [ ] Verify `modes/_shared.md` block headers emit English (A-G section titles)
+- [ ] Verify `modes/oferta.md` instructs English header keys (`**Date:**`, `**Archetype:**`, `**Legitimacy:**`, `**URL:**`, `**PDF:**`, `**Batch ID:**`)
+- [ ] Keep `modes/de/`, `modes/fr/`, `modes/ja/` untouched (opt-in localized variants)
+- [ ] Keep user's Spanish customizations in `modes/_profile.md` / `config/profile.yml` untouched
+
+---
+
 ## Out of scope
 
 - Per-row "scan" button (scan is global)
