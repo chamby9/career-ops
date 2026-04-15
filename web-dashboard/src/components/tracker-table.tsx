@@ -108,6 +108,26 @@ export function TrackerTable({ applications }: { applications: Application[] }) 
     }
   }
 
+  async function queueJob(action: string, args: Record<string, unknown>, label: string) {
+    try {
+      const res = await fetch(`/api/jobs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action, args }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(error || "request failed");
+      }
+      if (typeof window !== "undefined") {
+        window.alert(`Queued: ${label}. Check Jobs panel for progress.`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Queue failed";
+      if (typeof window !== "undefined") window.alert(`${label} failed to queue: ${msg}`);
+    }
+  }
+
   const filtered = useMemo(() => {
     const list = effective.filter((a) => {
       if (statusFilters.length > 0 && !statusFilters.includes(a.status)) return false;
@@ -291,10 +311,13 @@ export function TrackerTable({ applications }: { applications: Application[] }) 
                 <div className="flex-none pt-0.5">
                   <RowActions
                     num={a.num}
+                    company={a.company}
+                    role={a.role}
                     currentStatus={a.status}
                     reportSlug={a.reportSlug}
-                    jdUrl={null}
+                    jdUrl={a.jdUrl}
                     onStatusChange={(s) => changeStatus(a.num, s, a.status)}
+                    onQueueJob={queueJob}
                   />
                 </div>
               </div>

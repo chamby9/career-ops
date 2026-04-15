@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MoreVertical, ExternalLink, FileText, Check } from "lucide-react";
+import {
+  MoreVertical,
+  ExternalLink,
+  FileText,
+  Check,
+  RefreshCcw,
+  FileDown,
+  MessageSquare,
+  Search,
+  Telescope,
+  SendHorizontal,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const CANONICAL_STATUSES = [
@@ -17,15 +28,35 @@ export const CANONICAL_STATUSES = [
 
 export type CanonicalStatus = (typeof CANONICAL_STATUSES)[number];
 
+type QueuedAction =
+  | { key: "re-evaluate"; label: "Re-evaluate"; action: "evaluate"; icon: typeof RefreshCcw }
+  | { key: "pdf"; label: "Generate PDF"; action: "pdf"; icon: typeof FileDown }
+  | { key: "interview-prep"; label: "Interview prep"; action: "interview-prep"; icon: typeof MessageSquare }
+  | { key: "contacto"; label: "LinkedIn contacts"; action: "contacto"; icon: typeof Search }
+  | { key: "deep"; label: "Deep research"; action: "deep"; icon: typeof Telescope }
+  | { key: "apply"; label: "Help apply"; action: "apply"; icon: typeof SendHorizontal };
+
 type Props = {
   num: number;
+  company: string;
+  role: string;
   currentStatus: string;
   reportSlug: string | null;
   jdUrl: string | null;
   onStatusChange: (status: CanonicalStatus) => void;
+  onQueueJob: (action: string, args: Record<string, unknown>, label: string) => void;
 };
 
-export function RowActions({ num, currentStatus, reportSlug, jdUrl, onStatusChange }: Props) {
+export function RowActions({
+  num,
+  company,
+  role,
+  currentStatus,
+  reportSlug,
+  jdUrl,
+  onStatusChange,
+  onQueueJob,
+}: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -48,6 +79,31 @@ export function RowActions({ num, currentStatus, reportSlug, jdUrl, onStatusChan
   function stop(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+  }
+
+  const queued: QueuedAction[] = [
+    ...(jdUrl ? [{ key: "re-evaluate", label: "Re-evaluate", action: "evaluate", icon: RefreshCcw }] as const : []),
+    { key: "pdf", label: "Generate PDF", action: "pdf", icon: FileDown },
+    { key: "interview-prep", label: "Interview prep", action: "interview-prep", icon: MessageSquare },
+    { key: "contacto", label: "LinkedIn contacts", action: "contacto", icon: Search },
+    { key: "deep", label: "Deep research", action: "deep", icon: Telescope },
+    ...(jdUrl ? [{ key: "apply", label: "Help apply", action: "apply", icon: SendHorizontal }] as const : []),
+  ];
+
+  function argsFor(action: string): Record<string, unknown> {
+    switch (action) {
+      case "evaluate":
+      case "apply":
+        return { url: jdUrl };
+      case "pdf":
+      case "deep":
+        return { company };
+      case "interview-prep":
+      case "contacto":
+        return { company, role };
+      default:
+        return {};
+    }
   }
 
   return (
@@ -92,6 +148,31 @@ export function RowActions({ num, currentStatus, reportSlug, jdUrl, onStatusChan
               </button>
             );
           })}
+
+          <div className="my-1 h-px bg-border" />
+          <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+            Queue action
+          </div>
+          {queued.map((q) => {
+            const Icon = q.icon;
+            return (
+              <button
+                key={q.key}
+                role="menuitem"
+                type="button"
+                onClick={(e) => {
+                  stop(e);
+                  setOpen(false);
+                  onQueueJob(q.action, argsFor(q.action), q.label);
+                }}
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left hover:bg-accent hover:text-accent-foreground"
+              >
+                <Icon className="size-3" />
+                <span>{q.label}</span>
+              </button>
+            );
+          })}
+
           {(reportSlug || jdUrl) && (
             <>
               <div className="my-1 h-px bg-border" />

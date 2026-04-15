@@ -2,26 +2,10 @@ import { appendFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { paths } from "@/lib/paths";
+import { validateAction } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-type Action = "evaluate" | "scan" | "pdf";
-
-const ALLOWED: Action[] = ["evaluate", "scan", "pdf"];
-
-function validate(action: string, args: Record<string, unknown>): string | null {
-  if (!ALLOWED.includes(action as Action)) return `unknown action: ${action}`;
-  if (action === "evaluate") {
-    const url = args?.url;
-    if (typeof url !== "string" || !/^https?:\/\//.test(url)) return "evaluate requires valid url";
-  }
-  if (action === "pdf") {
-    const company = args?.company;
-    if (typeof company !== "string" || !company.trim()) return "pdf requires company";
-  }
-  return null;
-}
 
 export async function POST(req: Request) {
   let body: { action?: string; args?: Record<string, unknown> };
@@ -33,7 +17,7 @@ export async function POST(req: Request) {
 
   const action = body.action ?? "";
   const args = body.args ?? {};
-  const err = validate(action, args);
+  const err = validateAction(action, args);
   if (err) return Response.json({ error: err }, { status: 400 });
 
   const job = {

@@ -8,6 +8,7 @@ export type Application = {
   status: string;
   pdf: boolean;
   reportSlug: string | null;
+  jdUrl: string | null;
   notes: string;
 };
 

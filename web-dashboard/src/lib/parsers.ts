@@ -11,6 +11,16 @@ async function readIfExists(file: string): Promise<string | null> {
   }
 }
 
+async function loadJdUrl(slug: string): Promise<string | null> {
+  try {
+    const content = await fs.readFile(path.join(paths.reportsDir, `${slug}.md`), "utf8");
+    const m = content.match(/\*\*URL:\*\*\s*(\S+)/);
+    return m ? m[1] : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function loadApplications(): Promise<Application[]> {
   const content = await readIfExists(paths.applications);
   if (!content) return [];
@@ -53,9 +63,16 @@ export async function loadApplications(): Promise<Application[]> {
       status,
       pdf: pdf === "✅",
       reportSlug: reportMatch ? reportMatch[2].replace(/\.md$/, "") : null,
+      jdUrl: null,
       notes,
     });
   }
+
+  await Promise.all(
+    rows.map(async (r) => {
+      if (r.reportSlug) r.jdUrl = await loadJdUrl(r.reportSlug);
+    }),
+  );
 
   return rows.sort((a, b) => b.num - a.num);
 }
