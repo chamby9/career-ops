@@ -5,6 +5,7 @@ import {
   MoreVertical,
   ExternalLink,
   FileText,
+  FileType2,
   Check,
   RefreshCcw,
   FileDown,
@@ -44,6 +45,7 @@ type Props = {
   currentStatus: string;
   reportSlug: string | null;
   jdUrl: string | null;
+  hasPdf: boolean;
   onStatusChange: (status: CanonicalStatus) => void;
   onQueueJob: (action: string, args: Record<string, unknown>, label: string) => void;
   onScheduleFollowup: () => void;
@@ -56,6 +58,7 @@ export function RowActions({
   currentStatus,
   reportSlug,
   jdUrl,
+  hasPdf,
   onStatusChange,
   onQueueJob,
   onScheduleFollowup,
@@ -191,7 +194,7 @@ export function RowActions({
             <span>Schedule follow-up</span>
           </button>
 
-          {(reportSlug || jdUrl) && (
+          {(reportSlug || jdUrl || hasPdf) && (
             <>
               <div className="my-1 h-px bg-border" />
               {reportSlug && (
@@ -203,6 +206,19 @@ export function RowActions({
                 >
                   <FileText className="size-3" />
                   Open report
+                </a>
+              )}
+              {hasPdf && (
+                <a
+                  role="menuitem"
+                  href={`/api/tracker/${num}/pdf`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setOpen(false)}
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent hover:text-accent-foreground"
+                >
+                  <FileType2 className="size-3" />
+                  Open PDF
                 </a>
               )}
               {jdUrl && (

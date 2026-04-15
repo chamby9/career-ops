@@ -117,11 +117,11 @@ scan.mjs, generate-pdf.mjs, analyze-patterns.mjs, followup-cadence.mjs, check-li
 - [x] ActionsPanel on home: Evaluate URL input + Scan button + recent jobs strip
 - [x] Validates action whitelist, rejects unknown
 
-### v2.1 — Per-row actions on Applications [shipped, 1 defer]
+### v2.1 — Per-row actions on Applications [shipped]
 
 - [x] Kebab menu on each tracker row
 - [x] Status change (no Claude): Evaluated, Applied, Responded, Interview, Offer, Rejected, Discarded, SKIP → `POST /api/tracker/[num]/status` edits applications.md
-- [~] Open actions: Open report (shipped), Open JD URL (shipped), Open PDF (deferred — needs output/ indexing)
+- [x] Open actions: Open report, Open JD URL, Open PDF (`GET /api/tracker/[num]/pdf` resolves newest match in `output/` by company slug)
 - [x] Queued actions (worker): Re-evaluate (oferta), PDF, Interview prep, Contact (contacto), Deep research (deep), Apply
 - [x] Schedule follow-up: `POST /api/tracker/[num]/followup` appends to data/follow-ups.md (preserves cadence schema)
 - [x] Worker: extend action whitelist to `contacto`, `deep`, `interview-prep`, `apply`, `training`, `project`, `ofertas`, `batch`

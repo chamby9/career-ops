@@ -348,6 +348,7 @@ export function TrackerTable({ applications }: { applications: Application[] }) 
                     currentStatus={a.status}
                     reportSlug={a.reportSlug}
                     jdUrl={a.jdUrl}
+                    hasPdf={a.pdf}
                     onStatusChange={(s) => changeStatus(a.num, s, a.status)}
                     onQueueJob={queueJob}
                     onScheduleFollowup={() => scheduleFollowup(a.num, a.company)}
