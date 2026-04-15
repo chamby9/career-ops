@@ -12,6 +12,7 @@ import {
   Search,
   Telescope,
   SendHorizontal,
+  CalendarClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -45,6 +46,7 @@ type Props = {
   jdUrl: string | null;
   onStatusChange: (status: CanonicalStatus) => void;
   onQueueJob: (action: string, args: Record<string, unknown>, label: string) => void;
+  onScheduleFollowup: () => void;
 };
 
 export function RowActions({
@@ -56,6 +58,7 @@ export function RowActions({
   jdUrl,
   onStatusChange,
   onQueueJob,
+  onScheduleFollowup,
 }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -172,6 +175,21 @@ export function RowActions({
               </button>
             );
           })}
+
+          <div className="my-1 h-px bg-border" />
+          <button
+            role="menuitem"
+            type="button"
+            onClick={(e) => {
+              stop(e);
+              setOpen(false);
+              onScheduleFollowup();
+            }}
+            className="flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left hover:bg-accent hover:text-accent-foreground"
+          >
+            <CalendarClock className="size-3" />
+            <span>Schedule follow-up</span>
+          </button>
 
           {(reportSlug || jdUrl) && (
             <>
