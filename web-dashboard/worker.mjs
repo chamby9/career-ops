@@ -7,6 +7,7 @@ import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildSkillPrompt } from "./worker-actions.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
@@ -68,19 +69,7 @@ async function readNewJobs() {
 }
 
 function buildSkillArgs(job) {
-  const { action, args = {} } = job;
-  switch (action) {
-    case "evaluate":
-      if (!args.url) throw new Error("evaluate requires args.url");
-      return `/career-ops oferta ${args.url}`;
-    case "scan":
-      return `/career-ops scan`;
-    case "pdf":
-      if (!args.company) throw new Error("pdf requires args.company");
-      return `/career-ops pdf ${args.company}`;
-    default:
-      throw new Error(`unknown action: ${action}`);
-  }
+  return buildSkillPrompt(job.action, job.args ?? {});
 }
 
 function runClaude(prompt) {
